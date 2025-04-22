@@ -11,7 +11,7 @@ def mock_dao():
 def user_controller(mock_dao):
     return UserController(dao=mock_dao)
 
-# 1. One user found
+# 1. One user found - returns user
 def test_valid_email_one_user(user_controller, mock_dao):
     user = {"email": "test@example.com", "name": "Test"}
     mock_dao.find.return_value = [user]
@@ -19,33 +19,32 @@ def test_valid_email_one_user(user_controller, mock_dao):
     result = user_controller.get_user_by_email("test@example.com")
     assert result == user
 
-# 2. No user found
+# 2. No user found - returns None
 def test_valid_email_no_user(user_controller, mock_dao):
     mock_dao.find.return_value = []
-    with pytest.raises(IndexError):
-        user_controller.get_user_by_email("test@example.com")
+    result = user_controller.get_user_by_email("test@example.com")
+    assert result == None
 
-# 3. Multiple users found
+# 3. Multiple users found - warning message containing the email address -return the first one
 def test_valid_email_multiple_users(user_controller, mock_dao, capsys):
     user1 = {"email": "test@example.com", "name": "test1"}
     user2 = {"email": "test@example.com", "name": "test2"}
 
     mock_dao.find.return_value = [user1, user2]
     result = user_controller.get_user_by_email("test@example.com")
-    
 
     assert result == user1
 
     captured = capsys.readouterr()
     assert f"Error: more than one user found with mail test@example.com" in captured.out
 
-# 4. Invalid email format
+# 4. Invalid email format - raises ValueError
 @pytest.mark.parametrize("invalid_email", ["", "invalid", " "])
 def test_get_user_by_email_invalid_format_raises(user_controller, invalid_email):
     with pytest.raises(ValueError):
         user_controller.get_user_by_email(invalid_email)
 
-# 5. DB Error
+# 5. DB Error - Exception 
 def test_get_user_by_email_db_error(user_controller, mock_dao):
     mock_dao.find.side_effect = Exception("DB error")
     with pytest.raises(Exception):
